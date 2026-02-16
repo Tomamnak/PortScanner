@@ -1,0 +1,5 @@
+{
+  "name": "Copy of NetVision AI Port Profiler",
+  "description": "An AI-powered network simulation and analysis tool. It uses Gemini to profile targets, predict likely open ports based on service types, and analyze Nmap scan logs for vulnerabilities. Features a high-fidelity cyberpunk interface.",
+  "requestFramePermissions": []
+}
