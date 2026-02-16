@@ -21,7 +21,19 @@ const scanResultSchema: Schema = {
           state: { type: Type.STRING, enum: ["Open", "Filtered", "Closed"] },
           riskLevel: { type: Type.STRING, enum: ["Low", "Medium", "High", "Critical"] },
           description: { type: Type.STRING },
-          vulnerability: { type: Type.STRING, description: "Potential vulnerabilities associated with this port/service." },
+          vulnerabilities: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING, description: "CVE ID (e.g., CVE-2023-1234) or generic issue name" },
+                description: { type: Type.STRING, description: "Short description of the vulnerability" },
+                severity: { type: Type.STRING, enum: ["Low", "Medium", "High", "Critical"] }
+              },
+              required: ["id", "description", "severity"]
+            },
+            description: "List of potential vulnerabilities associated with this service/port."
+          }
         },
         required: ["port", "protocol", "service", "state", "riskLevel", "description"]
       }
@@ -44,6 +56,9 @@ export const profileTarget = async (target: string): Promise<{ ports: PortProfil
       
       If the target is a generic service name (e.g., "PostgreSQL Database"), profile the standard ports for that service.
       If the target is a domain (e.g., "example.com"), profile a standard web server configuration for that domain type.
+      
+      CRITICAL: For each open port, list 1-3 *potential* vulnerabilities that are historically common for that service type. 
+      Use realistic CVE IDs (e.g., CVE-2021-44228 for Java apps, or generic IDs like "WEAK-AUTH") and descriptions.
       
       Be realistic. Include a mix of standard ports (80, 443) and management ports if applicable (22, 3389, 8080).
     `;

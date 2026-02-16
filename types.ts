@@ -1,3 +1,9 @@
+export interface Vulnerability {
+  id: string;
+  description: string;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+}
+
 export interface PortProfile {
   port: number;
   protocol: string;
@@ -5,7 +11,7 @@ export interface PortProfile {
   state: 'Open' | 'Closed' | 'Filtered';
   riskLevel: 'Low' | 'Medium' | 'High' | 'Critical';
   description: string;
-  vulnerability?: string;
+  vulnerabilities?: Vulnerability[];
 }
 
 export interface ScanSession {
