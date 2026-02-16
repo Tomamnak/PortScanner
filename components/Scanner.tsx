@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { profileTarget } from '../services/geminiService';
 import { PortProfile } from '../types';
-import { Play, ShieldAlert, ShieldCheck, Activity, Lock, Terminal, Filter, Search, Clock, History, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Play, ShieldAlert, ShieldCheck, Activity, Lock, Terminal, Filter, Search, Clock, History, ExternalLink, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface HistoryItem {
   target: string;
@@ -33,6 +33,72 @@ const TypewriterText = ({ text }: { text: string }) => {
   }, [text]);
 
   return <span>{displayText}</span>;
+};
+
+const PortCard: React.FC<{ 
+  port: PortProfile; 
+  idx: number; 
+  getRiskColor: (risk: string) => string;
+  getSeverityBadgeColor: (severity: string) => string;
+}> = ({ port, idx, getRiskColor, getSeverityBadgeColor }) => {
+  const [expanded, setExpanded] = useState(false);
+  const hasVulns = port.vulnerabilities && port.vulnerabilities.length > 0;
+
+  return (
+    <div 
+      className={`p-4 border bg-black/60 backdrop-blur-sm flex flex-col gap-2 group hover:shadow-[0_0_15px_rgba(0,255,65,0.2)] transition-all ${getRiskColor(port.riskLevel)} animate-[fadeIn_0.5s_ease-out_both]`} 
+      style={{ animationDelay: `${idx * 50}ms` }}
+    >
+      <div className="flex justify-between items-start">
+        <span className="text-2xl font-display font-bold">{port.port}</span>
+        <span className="text-xs px-2 py-1 border border-current opacity-80">{port.protocol}</span>
+      </div>
+      <div className="flex items-center gap-2 text-sm font-bold opacity-90">
+        {port.state === 'Open' ? <Activity className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+        {port.service.toUpperCase()}
+      </div>
+      <p className="text-xs opacity-70 mt-1">{port.description}</p>
+      
+      {hasVulns && (
+        <div className="mt-auto pt-2">
+          <button 
+            onClick={() => setExpanded(!expanded)}
+            className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-wider py-1.5 px-2 border border-current/20 hover:bg-current/10 hover:border-current/50 transition-all"
+          >
+            <span>{expanded ? 'Hide Intel' : 'View Vulnerabilities'}</span>
+            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+          
+          {expanded && (
+            <div className="mt-3 space-y-2 animate-[slideUp_0.3s_ease-out] overflow-hidden">
+               {port.vulnerabilities!.map((vuln, vIdx) => (
+                 <div key={vIdx} className="border-t border-current/20 pt-2 flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${getSeverityBadgeColor(vuln.severity)}`}>
+                        {vuln.severity}
+                      </span>
+                      <a 
+                        href={`https://nvd.nist.gov/vuln/detail/${vuln.id}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[10px] underline decoration-dotted hover:decoration-solid hover:text-white flex items-center gap-1 opacity-80"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {vuln.id} <ExternalLink className="w-2 h-2" />
+                      </a>
+                    </div>
+                    <div className="flex items-start gap-1.5 opacity-80">
+                       <AlertTriangle className="w-3 h-3 min-w-[12px] mt-0.5 text-current opacity-70" />
+                       <span className="text-[10px] leading-tight">{vuln.description}</span>
+                    </div>
+                 </div>
+               ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export const Scanner: React.FC = () => {
@@ -180,17 +246,18 @@ export const Scanner: React.FC = () => {
 
         {/* Scan History */}
         {history.length > 0 && (
-          <div className="bg-cyber-gray/50 border border-cyber-green/30 p-4 max-h-48 flex flex-col">
+          <div className="bg-cyber-gray/50 border border-cyber-green/30 p-4 max-h-48 flex flex-col animate-[historyFadeIn_0.5s_ease-out]">
              <div className="flex items-center gap-2 mb-3 text-cyber-green/70 border-b border-cyber-green/20 pb-2">
                 <History className="w-4 h-4" />
                 <span className="text-xs font-bold tracking-widest">SESSION HISTORY</span>
              </div>
              <div className="overflow-y-auto custom-scrollbar flex flex-col gap-2">
-                {history.map((item) => (
+                {history.map((item, index) => (
                   <button 
                     key={item.timestamp}
                     onClick={() => loadHistoryItem(item)}
-                    className="flex items-center justify-between p-2 text-xs border border-cyber-green/10 bg-black/40 hover:bg-cyber-green/10 hover:border-cyber-green/50 hover:text-cyber-blue transition-all group text-left"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                    className="flex items-center justify-between p-2 text-xs border border-cyber-green/10 bg-black/40 hover:bg-cyber-green/10 hover:border-cyber-green/50 hover:text-cyber-blue transition-all group text-left animate-[slideInRight_0.4s_cubic-bezier(0.2,0.8,0.2,1)_both]"
                   >
                     <span className="font-mono font-bold truncate max-w-[120px]">{item.target}</span>
                     <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100">
@@ -237,7 +304,7 @@ export const Scanner: React.FC = () => {
         )}
 
         {scanData && (
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden animate-[fadeIn_0.5s_ease-out]">
              {/* Summary Header */}
              <div className="p-6 border-b border-cyber-green/20 bg-black/40">
                 <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
@@ -295,45 +362,13 @@ export const Scanner: React.FC = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredPorts.map((port, idx) => (
-                      <div key={idx} className={`p-4 border bg-black/60 backdrop-blur-sm flex flex-col gap-2 group hover:shadow-[0_0_15px_rgba(0,255,65,0.2)] transition-all ${getRiskColor(port.riskLevel)}`}>
-                        <div className="flex justify-between items-start">
-                          <span className="text-2xl font-display font-bold">{port.port}</span>
-                          <span className="text-xs px-2 py-1 border border-current opacity-80">{port.protocol}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm font-bold opacity-90">
-                          {port.state === 'Open' ? <Activity className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                          {port.service.toUpperCase()}
-                        </div>
-                        <p className="text-xs opacity-70 mt-1">{port.description}</p>
-                        
-                        {/* Vulnerabilities Section */}
-                        {port.vulnerabilities && port.vulnerabilities.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                             {port.vulnerabilities.map((vuln, vIdx) => (
-                               <div key={vIdx} className="border-t border-current/20 pt-2 flex flex-col gap-1">
-                                  <div className="flex items-center justify-between">
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${getSeverityBadgeColor(vuln.severity)}`}>
-                                      {vuln.severity}
-                                    </span>
-                                    <a 
-                                      href={`https://nvd.nist.gov/vuln/detail/${vuln.id}`} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-[10px] underline decoration-dotted hover:decoration-solid hover:text-white flex items-center gap-1 opacity-80"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {vuln.id} <ExternalLink className="w-2 h-2" />
-                                    </a>
-                                  </div>
-                                  <div className="flex items-start gap-1.5 opacity-80">
-                                     <AlertTriangle className="w-3 h-3 min-w-[12px] mt-0.5 text-current opacity-70" />
-                                     <span className="text-[10px] leading-tight">{vuln.description}</span>
-                                  </div>
-                               </div>
-                             ))}
-                          </div>
-                        )}
-                      </div>
+                      <PortCard 
+                        key={idx} 
+                        port={port} 
+                        idx={idx} 
+                        getRiskColor={getRiskColor} 
+                        getSeverityBadgeColor={getSeverityBadgeColor} 
+                      />
                     ))}
                   </div>
                 )}
@@ -341,6 +376,21 @@ export const Scanner: React.FC = () => {
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(-10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes historyFadeIn {
+          from { opacity: 0; transform: translateY(-5px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };
